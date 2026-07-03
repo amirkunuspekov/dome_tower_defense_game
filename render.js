@@ -124,3 +124,98 @@ export function drawCritter(c) {
   ctx.restore();
   if (c.flash > 0) c.flash--;
 }
+
+export function drawPickup(p) {
+  const pos = utils.polarToXY(p.angle, p.dist);
+  p.wobble += 0.06;
+  p.bob += 0.07;
+  const bob = Math.sin(p.bob) * 3;
+  const { col, colLight, icon, label } = utils.pickupStyle(p.kind);
+
+  ctx.save();
+  ctx.translate(pos.x, pos.y + bob);
+
+  // Outer glow ring
+  ctx.beginPath();
+  ctx.arc(0, 0, p.radius + 6, 0, Math.PI * 2);
+  ctx.strokeStyle = col + "55";
+  ctx.lineWidth = 4;
+  ctx.stroke();
+
+  // Body
+  ctx.beginPath();
+  ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+  ctx.fillStyle = p.flash > 0 ? "#ffffff" : col;
+  ctx.fill();
+
+  // Icon text
+  ctx.font = "bold 14px system-ui, sans-serif";
+  ctx.fillStyle = "#111";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(icon, 0, 1);
+
+  // Label below
+  ctx.font = "9px system-ui, sans-serif";
+  ctx.fillStyle = colLight;
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(label, 0, p.radius + 18);
+
+  ctx.restore();
+  if (p.flash > 0) p.flash--;
+}
+
+export function drawParticles(particles) {
+  particles.forEach((p) => {
+    ctx.save();
+    ctx.globalAlpha = p.life;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 3 * p.life, 0, Math.PI * 2);
+    ctx.fillStyle = p.col;
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+export function drawPopups(popups) {
+  popups.forEach((p) => {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, Math.min(1, p.life));
+    ctx.fillStyle = p.col;
+    ctx.font = `bold ${p.big ? 20 : 14}px system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.fillText(p.text, p.x, p.y);
+    ctx.restore();
+  });
+}
+
+export function drawShots(turretShots, beamActive) {
+  turretShots.forEach((s) => {
+    ctx.save();
+    ctx.globalAlpha = s.life;
+    ctx.beginPath();
+    ctx.moveTo(s.x, s.y);
+    ctx.lineTo(s.tx, s.ty);
+    ctx.strokeStyle = s.col;
+    ctx.lineWidth = beamActive ? 4 : 2.5;
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(s.tx, s.ty, 4 * s.life, 0, Math.PI * 2);
+    ctx.fillStyle = s.col;
+    ctx.fill();
+    ctx.restore();
+  });
+}
+
+export function drawOverlay(text) {
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,0.82)";
+  ctx.beginPath();
+  ctx.roundRect(configs.CX - 140, configs.CY - 36, 280, 72, 10);
+  ctx.fill();
+  ctx.fillStyle = "#1c2733";
+  ctx.font = "500 17px system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText(text, configs.CX, configs.CY + 7);
+  ctx.restore();
+}
