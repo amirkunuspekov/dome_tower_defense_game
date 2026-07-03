@@ -26,12 +26,16 @@ let shieldActive = false,
   shieldTicks = 0;
 let beamActive = false,
   beamTicks = 0;
+let freezeActive = false,
+  freezeTicks = 0;
 let nukeCooldown = 0,
   nukeCheckTimer = 0;
 let combo = 0,
   comboTimer = 0;
 let popups = [];
 const POWERUP_DURATION = 5 * FPS;
+const FREEZE_DURATION = 10 * FPS;
+const FREEZE_SLOW = 0.35; // enemies move at 35% speed while frozen
 const NUKE_COOLDOWN = 30 * FPS;
 const COMBO_WINDOW = Math.round(1.3 * FPS);
 const COMBO_CAP = 6;
@@ -56,8 +60,10 @@ function updateHUD() {
 
   const shieldBadge = document.getElementById("shield-badge");
   const beamBadge = document.getElementById("beam-badge");
+  const freezeBadge = document.getElementById("freeze-badge");
   const shieldTimer = document.getElementById("shield-timer");
   const beamTimer = document.getElementById("beam-timer");
+  const freezeTimer = document.getElementById("freeze-timer");
 
   if (shieldActive) {
     shieldBadge.classList.remove("inactive");
@@ -72,6 +78,13 @@ function updateHUD() {
   } else {
     beamBadge.classList.add("inactive");
     beamTimer.textContent = "";
+  }
+  if (freezeActive) {
+    freezeBadge.classList.remove("inactive");
+    freezeTimer.textContent = Math.ceil(freezeTicks / FPS) + "s";
+  } else {
+    freezeBadge.classList.add("inactive");
+    freezeTimer.textContent = "";
   }
 }
 
@@ -92,6 +105,8 @@ function resetGame() {
   shieldTicks = 0;
   beamActive = false;
   beamTicks = 0;
+  freezeActive = false;
+  freezeTicks = 0;
   nukeCooldown = 0;
   nukeCheckTimer = 0;
   combo = 0;
@@ -182,6 +197,12 @@ function activateBeam() {
   beamActive = true;
   beamTicks = POWERUP_DURATION;
   showMsg("Power beam active — 5 seconds!");
+}
+
+function activateFreeze() {
+  freezeActive = true;
+  freezeTicks = FREEZE_DURATION;
+  showMsg("Deep freeze — enemies slowed for 10 seconds!");
 }
 
 function detonateNuke() {
@@ -348,18 +369,26 @@ function drawCritter(c) {
   if (c.flash > 0) c.flash--;
 }
 
+// Visual attributes (colors, icon, label) for each pickup kind.
+function pickupStyle(kind) {
+  switch (kind) {
+    case "shield":
+      return { col: "#378ADD", colLight: "#85B7EB", icon: "🛡", label: "SHIELD" };
+    case "beam":
+      return { col: "#EF9F27", colLight: "#FAC775", icon: "⚡", label: "BEAM" };
+    case "freeze":
+      return { col: "#2FB3CC", colLight: "#9BE3F0", icon: "❄", label: "FREEZE" };
+    default: // nuke
+      return { col: "#E24B4A", colLight: "#F09595", icon: "☢", label: "NUKE" };
+  }
+}
+
 function drawPickup(p) {
   const pos = polarToXY(p.angle, p.dist);
   p.wobble += 0.06;
   p.bob += 0.07;
   const bob = Math.sin(p.bob) * 3;
-  const col =
-    p.kind === "shield" ? "#378ADD" : p.kind === "beam" ? "#EF9F27" : "#E24B4A";
-  const colLight =
-    p.kind === "shield" ? "#85B7EB" : p.kind === "beam" ? "#FAC775" : "#F09595";
-  const icon = p.kind === "shield" ? "🛡" : p.kind === "beam" ? "⚡" : "☢";
-  const label =
-    p.kind === "shield" ? "SHIELD" : p.kind === "beam" ? "BEAM" : "NUKE";
+  const { col, colLight, icon, label } = pickupStyle(p.kind);
 
   ctx.save();
   ctx.translate(pos.x, pos.y + bob);
@@ -469,7 +498,11 @@ function tick() {
       pickupTimer++;
       if (pickupTimer >= pickupInterval) {
         pickupTimer = 0;
-        const kind = Math.random() < 0.5 ? "shield" : "beam";
+        // Freeze can appear after wave 5 (but not while one is already
+        // active), otherwise pick shield/beam.
+        let kind;
+        if (wave > 5 && !freezeActive && Math.random() < 0.35) kind = "freeze";
+        else kind = Math.random() < 0.5 ? "shield" : "beam";
         spawnPickup(kind);
       }
     }
@@ -507,6 +540,13 @@ function tick() {
         showMsg("Power beam expired.");
       }
     }
+    if (freezeActive) {
+      freezeTicks--;
+      if (freezeTicks <= 0) {
+        freezeActive = false;
+        showMsg("Enemies thawed out.");
+      }
+    }
 
     // Update pickups
     for (let i = pickups.length - 1; i >= 0; i--) {
@@ -522,7 +562,7 @@ function tick() {
     // Update critters
     for (let i = critters.length - 1; i >= 0; i--) {
       const c = critters[i];
-      c.dist -= c.speed;
+      c.dist -= c.speed * (freezeActive ? FREEZE_SLOW : 1);
       // Red critters make one random swerve (up to 180deg) near the halfway
       // mark, easing smoothly toward the new heading.
       const halfway = (DOME_R - 8 + 22) / 2;
@@ -611,6 +651,20 @@ function tick() {
   drawParticles();
   drawPopups();
 
+  // Frost tint over the dome while enemies are frozen
+  if (freezeActive) {
+    const p = 0.5 + 0.15 * Math.sin(Date.now() / 300);
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(CX, CY, DOME_R, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(120, 210, 230, ${0.1 + 0.04 * p})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(47, 179, 204, ${0.4 + 0.25 * p})`;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.restore();
+  }
+
   if (state === "idle") drawOverlay("Press Start to play");
   if (state === "over") drawOverlay("Game over — score: " + score);
 
@@ -639,23 +693,13 @@ canvas.addEventListener("click", (e) => {
     const p = pickups[i];
     const pos = polarToXY(p.angle, p.dist);
     if (Math.hypot(mx - pos.x, my - pos.y) < p.radius + 12) {
-      const burstCol =
-        p.kind === "shield"
-          ? "#378ADD"
-          : p.kind === "beam"
-            ? "#EF9F27"
-            : "#E24B4A";
-      const shotCol =
-        p.kind === "shield"
-          ? "#85B7EB"
-          : p.kind === "beam"
-            ? "#FAC775"
-            : "#F09595";
+      const { col: burstCol, colLight: shotCol } = pickupStyle(p.kind);
       spawnParticles(pos.x, pos.y, burstCol, 14);
       fireTurret(pos.x, pos.y, shotCol);
       pickups.splice(i, 1);
       if (p.kind === "shield") activateShield();
       else if (p.kind === "beam") activateBeam();
+      else if (p.kind === "freeze") activateFreeze();
       else detonateNuke();
       return;
     }

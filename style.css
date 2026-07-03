@@ -90,6 +90,11 @@ body {
   color: #603f0a;
   border-color: #ba7517;
 }
+.pu-badge.freeze {
+  background: rgba(47, 179, 204, 0.94);
+  color: #06414d;
+  border-color: #1f8497;
+}
 .pu-badge.inactive {
   opacity: 0.7;
 }
