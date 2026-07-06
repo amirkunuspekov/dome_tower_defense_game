@@ -6,7 +6,7 @@
   padding: 0;
 }
 body {
-  background: #44c1ff url("mountain_top_polar_view.png") center 60% / 30%
+  background: #44c1ff url("mountain_top_polar_view.png") center center / 91%
     no-repeat fixed;
   color: #1c2733;
   font-family: system-ui, sans-serif;

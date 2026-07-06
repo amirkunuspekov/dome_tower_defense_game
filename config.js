@@ -4,7 +4,7 @@ export const W = canvas.width,
   H = canvas.height;
 export const CX = W / 2,
   CY = H / 2;
-export const DOME_R = 230;
+export const DOME_R = 322;
 export const FPS = 60;
 
 export const POWERUP_DURATION = 5 * FPS;
