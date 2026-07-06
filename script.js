@@ -3,7 +3,6 @@ import * as utils from "./utils.js";
 import * as render from "./render.js";
 
 const ctx = configs.ctx;
-const FPS = 60;
 
 let state = "idle";
 let score = 0,
@@ -59,21 +58,21 @@ function updateHUD() {
 
   if (shieldActive) {
     shieldBadge.classList.remove("inactive");
-    shieldTimer.textContent = Math.ceil(shieldTicks / FPS) + "s";
+    shieldTimer.textContent = Math.ceil(shieldTicks / configs.FPS) + "s";
   } else {
     shieldBadge.classList.add("inactive");
     shieldTimer.textContent = "";
   }
   if (beamActive) {
     beamBadge.classList.remove("inactive");
-    beamTimer.textContent = Math.ceil(beamTicks / FPS) + "s";
+    beamTimer.textContent = Math.ceil(beamTicks / configs.FPS) + "s";
   } else {
     beamBadge.classList.add("inactive");
     beamTimer.textContent = "";
   }
   if (freezeActive) {
     freezeBadge.classList.remove("inactive");
-    freezeTimer.textContent = Math.ceil(freezeTicks / FPS) + "s";
+    freezeTimer.textContent = Math.ceil(freezeTicks / configs.FPS) + "s";
   } else {
     freezeBadge.classList.add("inactive");
     freezeTimer.textContent = "";
@@ -273,7 +272,7 @@ function tick() {
     // after a nuke is used.
     if (nukeCooldown > 0) nukeCooldown--;
     nukeCheckTimer++;
-    if (nukeCheckTimer >= FPS) {
+    if (nukeCheckTimer >= configs.FPS) {
       nukeCheckTimer = 0;
       const nukeOnScreen = pickups.some((p) => p.kind === "nuke");
       if (
