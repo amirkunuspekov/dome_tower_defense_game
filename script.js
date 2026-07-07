@@ -354,6 +354,7 @@ function tick() {
           sound.playDamage();
           updateHUD();
           if (lives <= 0) {
+            sound.stopMusic();
             sound.playGameOver();
             const isBest = score > bestScore;
             if (isBest) {
@@ -556,6 +557,7 @@ configs.canvas.addEventListener("mousemove", (e) => {
 function startGame() {
   resetGame();
   state = "playing";
+  sound.startMusic();
   document.getElementById("msg").textContent =
     "Tap critters before they reach the apex!";
   document.getElementById("start-btn").textContent = "Restart";

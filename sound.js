@@ -53,3 +53,25 @@ export function playGameOver() {
   setTimeout(() => blip(330, 0.3, "sawtooth", 0.2, 160), 160);
   setTimeout(() => blip(220, 0.5, "sawtooth", 0.2, 90), 340);
 }
+
+// Looping background music.
+let music = null;
+
+export function startMusic() {
+  if (!music) {
+    music = new Audio("background_music.mp3");
+    music.loop = true;
+    music.volume = 0.35;
+  }
+  music.currentTime = 0;
+  // play() returns a promise that rejects if autoplay is blocked; ignore it —
+  // this is called from a click handler, so playback is allowed.
+  music.play().catch(() => {});
+}
+
+export function stopMusic() {
+  if (music) {
+    music.pause();
+    music.currentTime = 0;
+  }
+}
