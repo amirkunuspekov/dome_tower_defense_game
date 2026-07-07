@@ -1,6 +1,7 @@
 import * as configs from "./config.js";
 import * as utils from "./utils.js";
 import * as render from "./render.js";
+import * as sound from "./sound.js";
 
 const ctx = configs.ctx;
 
@@ -350,8 +351,10 @@ function tick() {
           spawnParticles(pos.x, pos.y, c.color);
           critters.splice(i, 1);
           lives--;
+          sound.playDamage();
           updateHUD();
           if (lives <= 0) {
+            sound.playGameOver();
             const isBest = score > bestScore;
             if (isBest) {
               bestScore = score;
@@ -462,6 +465,7 @@ configs.canvas.addEventListener("click", (e) => {
       spawnParticles(pos.x, pos.y, burstCol, 14);
       fireTurret(pos.x, pos.y, shotCol);
       pickups.splice(i, 1);
+      sound.playPickup();
       if (p.kind === "shield") activateShield();
       else if (p.kind === "beam") activateBeam();
       else if (p.kind === "freeze") activateFreeze();
@@ -487,6 +491,7 @@ configs.canvas.addEventListener("click", (e) => {
       }
 
       if (c.hp <= 0) {
+        sound.playKill();
         spawnParticles(pos.x, pos.y, c.color, beamActive ? 16 : 10);
         critters.splice(i, 1);
 
